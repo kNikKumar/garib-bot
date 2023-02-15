@@ -4,6 +4,9 @@ const {Client, GatewayIntentBits, SlashCommandBuilder, Events, ModalBuilder, Act
 const path = require("node:path");
 const { token, guildId } = require("./config.json");
 const cron = require('node-cron');
+const { appendFileSync } = require('fs');
+const { getAuthToken, getSpreadSheet, getSpreadSheetValues} = require("./spreadSheet/spreadSheet");
+
 
 const client = new Client({
 	intents: [
@@ -35,7 +38,7 @@ client.once(Events.ClientReady, client => {
 	// # │ │ │ │ ┌────── month
 	// # │ │ │ │ │ ┌──── day of week
 	// # │ │ │ │ │ │
-	// # │ │ │ │ │ │
+	// # │ │ │ │ │ │ 
 	// # * * * * * *
 	cron.schedule('* * * * *', () => {
 		client.channels.cache.get(guildId).send("Hello!")
@@ -57,7 +60,6 @@ client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
 
 	if (interaction.commandName === 'ping') {
-		console.log("In Modal INteraction");
 		const modal = new ModalBuilder().setCustomId("pingModal").setTitle("My Modal");
 
 		const fields = {
@@ -89,9 +91,28 @@ client.on(Events.InteractionCreate, async interaction => {
 		const favColor = interaction.fields.getTextInputValue("favColorInput");
 		const hobbies = interaction.fields.getTextInputValue("hobbiesInput");
 
-		await interaction.reply({content: `You color ${favColor}, hobbies ${hobbies}`})
-	}
+		const auth = await getAuthToken();
+		const response = await getSpreadSheet({
+			spreadsheetId:"1WOZwOke7daJUyaFpwUFe_colgtFMBRKDwZPdEurXllA", auth
+		})
 
+		const sheetResponse = await getSpreadSheetValues({
+			spreadsheetId: "1WOZwOke7daJUyaFpwUFe_colgtFMBRKDwZPdEurXllA", 
+			auth,
+			sheetName: "Sheet1"
+		})
+
+		console.log(sheetResponse.data.values);
+
+		await interaction.reply({content: `You color ${favColor}, hobbies ${hobbies}`})
+
+		const userSubmittedData = `${favColor}, ${hobbies}\n`;
+		try {
+			appendFileSync("./contacts.csv", userSubmittedData);
+		} catch (err) {
+			console.log(err);
+		}
+	}
 })
 
 client.login(token);
