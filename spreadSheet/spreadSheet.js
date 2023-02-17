@@ -29,9 +29,26 @@ async function getSpreadSheetValues({spreadsheetId, auth, sheetName}) {
   return res;
 }
 
+async function postSpreadSheetValues({spreadsheetId, auth, sheetName, data = []}) {
+  const res = await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    auth,
+    range: sheetName,
+    valueInputOption: 'USER_ENTERED',
+    resource: {
+      values: [
+        data
+      ]
+    }
+  })
+
+  return res;
+}
+
 
 module.exports = {
   getAuthToken,
   getSpreadSheet,
-  getSpreadSheetValues
+  getSpreadSheetValues,
+  postSpreadSheetValues
 }
